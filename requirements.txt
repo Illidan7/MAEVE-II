@@ -5,3 +5,8 @@ matplotlib
 seaborn
 plotly
 pandas_datareader
+yfinance
+datetime
+fsspec
+jupyter
+jupyter_contrib_nbextensions
