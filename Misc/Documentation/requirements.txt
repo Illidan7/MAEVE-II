@@ -11,3 +11,5 @@ fsspec
 jupyter
 jupyter_contrib_nbextensions
 tqdm
+scipy
+alpaca-trade-api
