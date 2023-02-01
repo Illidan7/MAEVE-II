@@ -1,61 +1,74 @@
-import alpaca_trade_api as tradeapi
-import pandas as pd
+import sys
+
+sys.path.append("S://Docs//Personal//MAEVE//Data//Config//")
+from config import *
+
+from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
+
+from alpaca.data.historical import CryptoHistoricalDataClient
+from alpaca.data.requests import CryptoLatestQuoteRequest
 
 class AlpacaTrader:
-    def __init__(self, api_key, secret_key):
-        self.api = tradeapi.REST(api_key, secret_key, base_url='https://paper-api.alpaca.markets')
-
-    def place_buy_order(self, symbol, qty, order_type, limit_price=None):
-        if order_type == 'limit':
-            self.api.submit_order(
-                symbol=symbol,
-                qty=qty,
-                side='buy',
-                type=order_type,
-                time_in_force='gtc',
-                limit_price=limit_price
-            )
-        elif order_type == 'market':
-            self.api.submit_order(
-                symbol=symbol,
-                qty=qty,
-                side='buy',
-                type=order_type,
-                time_in_force='gtc'
-            )
-        else:
-            print('Invalid order type')
-
-    def place_sell_order(self, symbol, qty, order_type, limit_price=None):
-        if order_type == 'limit':
-            self.api.submit_order(
-                symbol=symbol,
-                qty=qty,
-                side='sell',
-                type=order_type,
-                time_in_force='gtc',
-                limit_price=limit_price
-            )
-        elif order_type == 'market':
-            self.api.submit_order(
-                symbol=symbol,
-                qty=qty,
-                side='sell',
-                type=order_type,
-                time_in_force='gtc'
-            )
-        else:
-            print('Invalid order type')
-
-    def cancel_order(self, order_id=None):
-        if order_id:
-            self.api.cancel_order(order_id)
-        else:
-            open_orders = self.api.list_orders()
-            for order in open_orders:
-                self.api.cancel_order(order.id)
     
-    def get_price(self, symbol, cadence='1Min'):
-    barset = api.get_barset(symbol, cadence, limit=1)
-    latest_bar = barset[symbol][0]
-    return latest_bar.c
+    def __init__(self):
+        self.trading_client = TradingClient(API_KEY, SECRET_KEY, paper=True)
+        
+        
+    def BUY(self, symbol, qty):
+        # preparing orders
+        market_order_data = MarketOrderRequest(
+            symbol=symbol,
+            qty=qty,
+            side=OrderSide.BUY,
+            time_in_force=TimeInForce.GTC
+        )
+
+        # Market order
+        market_order = self.trading_client.submit_order(
+            order_data=market_order_data
+        )
+        
+        return
+    
+    
+    def SELL(self, symbol, qty):
+        # preparing orders
+        market_order_data = MarketOrderRequest(
+            symbol=symbol,
+            qty=qty,
+            side=OrderSide.SELL,
+            time_in_force=TimeInForce.GTC
+        )
+
+        # Market order
+        market_order = self.trading_client.submit_order(
+            order_data=market_order_data
+        )
+        
+        return
+    
+    
+    def GET_PRICE(self, symbol):
+        # no keys required
+        client = CryptoHistoricalDataClient()
+
+        # single symbol request
+        request_params = CryptoLatestQuoteRequest(symbol_or_symbols=symbol)
+        latest_quote = client.get_crypto_latest_quote(request_params)
+
+        return latest_quote[symbol].ask_price
+    
+    
+    def CHK_POS(self, symbol):
+        symbol = symbol.replace('/','')
+        portfolio = self.trading_client.get_all_positions()
+        
+        for position in portfolio:           
+            if dict(position)['symbol'] == symbol:    
+                return dict(position)['qty']
+        
+
+        
+
