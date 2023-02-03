@@ -20,8 +20,11 @@ from dateutil.relativedelta import relativedelta
 
 class AlpacaTrader:
     
-    def __init__(self):
-        self.trading_client = TradingClient(API_KEY, SECRET_KEY, paper=True)
+    def __init__(self, live=False):
+        if live: self.trading_client = TradingClient(API_KEY, SECRET_KEY, paper=not live)
+        else: self.trading_client = TradingClient(PAPER_API_KEY, PAPER_SECRET_KEY, paper=not live)
+        
+        self.alp_factor = 1 - FEES
         
         
     def BUY(self, symbol, qty):
