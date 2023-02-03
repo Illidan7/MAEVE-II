@@ -2,6 +2,8 @@ import AlpacaTrader as alp
 
 import pandas as pd
 
+import os
+import time
 import logging
 from datetime import datetime
 
@@ -21,23 +23,32 @@ logging.basicConfig(filename=log_loc, level=logging.INFO)
 
 # Event logging
 events_df = pd.DataFrame()
-# datetime, price, usd, sats, MA12, MA20, init_cash, profit/loss, cooldown
+# datetime, price, usd, sats, MA12, MA20, cur_cash, profit/loss, cooldown
 
 # Trade logging
 trades_df = pd.DataFrame()
 # datetime, trigger, tradetype, price, usd, sats, init_cash, cur_cash, profit/loss, streak, return
 
+####################
+# Custom functions
+####################
 
 def event_log(event):
+    event_df = pd.DataFrame(event)
     path = save_loc + f"event_log.csv"
-    # feats_df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
-    
-    pass
+    event_df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
+    return
 
-def trade_log(event):
-    pass
+def trade_log(trade):
+    trade_df = pd.DataFrame(trade)
+    path = save_loc + f"trade_log.csv"
+    trade_df.to_csv(path, mode='a', header=not os.path.exists(path), index=False)
+    return
 
 
+###########################
+# Strategy Implementation
+###########################
 
 logging.info("############################")
 logging.info(datetime.today())
@@ -52,7 +63,8 @@ MAEVE = {
             'stoploss': 0.01,
             'streaklim': 2,
             'cooldown': 48,
-            'trailing': True
+            'trailing': True,
+            'sleepMin': 30
         }
 
 
@@ -61,6 +73,7 @@ stop_price = 0
 orig_stop_price = 0
 streak = 0
 idle = 0
+stopped = 0
 
 
 
@@ -80,25 +93,41 @@ while True:
     # Get current price
     price = trader.GET_PRICE()
     # Get current balances
-    usd, sats = trader.CHK_BAL()
+    sats, usd = trader.CHK_BAL()
+    
+    print(usd, sats)
 
     # Get MAs
-    MA1 = trader.GET_MA(MAEVE.MA1)
-    MA2 = trader.GET_MA(MAEVE.MA2)
+    MA1 = trader.GET_MA(MAEVE['MA1'])
+    MA2 = trader.GET_MA(MAEVE['MA2'])
     
-    # event_log()
+    logging.info("Event Log")
+    # Event log
+    # datetime, price, usd, sats, MA12, MA20, cur_cash, profit/loss, cooldown
+    event = {
+                'datetime': [str(datetime.now())],
+                'price': [price],
+                'usd': [usd],
+                'sats': [sats],
+                'MA12': [MA1],
+                'MA20': [MA2],
+                'bullish': [MA1>MA2],
+                'stopped': [stopped],
+                'cur_cash': [round(usd + (sats*price), 2)],
+                'cooldown': [streak >= MAEVE['streaklim']] 
+            }
+    event_log(event)
     
     ############
     # Cooldown
     ############
             
-    if streak >= MAEVE.streaklim:
+    if streak >= MAEVE['streaklim']:
+        
+        logging.info(f"Cooldown: {idle}")
         
         idle += 1
-        # strat_sats.append(row_sats)
-        # strat_usd.append(row_usd)
-
-        if idle >= MAEVE.cooldown:
+        if idle >= MAEVE['cooldown']:
             streak = 0
             idle = 0
     
@@ -108,52 +137,116 @@ while True:
     #######################
     
     # Trailing stop loss
-    if trailing:
-        new_stop = round((1-stoploss) * row['Close'], 2)
+    if MAEVE['trailing'] and usd < 5:
+        
+        new_stop = round((1-MAEVE['stoploss']) * price, 2)
         if stop_price == orig_stop_price:
-            if new_stop > (stop_price * (1+stoploss)): stop_price = new_stop
+            if new_stop > (stop_price * (1+MAEVE['stoploss'])): 
+                logging.info(f"Trailing Stop price -> break even")
+                stop_price = new_stop
         else:
-            if new_stop > (stop_price * (1+0.01)): stop_price = new_stop
+            if new_stop > (stop_price * (1+0.01)): 
+                logging.info(f"Trailing Stop price +0.01")
+                stop_price = new_stop
     
     # Check stop loss trigger
-    if row['Close'] < stop_price and current_position == "buy":
+    if price < stop_price and usd < 5:
+        
+        logging.info(f"Stop loss triggered at ${stop_price}")
         
         # Update position
-        current_position = "sell"
-        cash = round(sats * row['Close'], 2)
-        sats = 0
-        # row_usd = cash
-
-        # Log trade
-        trades_df = pd.concat([trades_df, log_trade(row, current_position, cash, sats)])
-        trade_trigger.append('STOP')
+        trader.SELL(symbol=symbol, qty=sats)
         
         # Update streak
         streak += 1
+        stopped = 1
+        
+        # Log trade
+        # datetime, trigger, tradetype, price, usd, sats, MA12, MA20, cur_cash, streak
+        trade = {
+                    'datetime': [str(datetime.now())],
+                    'trigger': ['STOP'],
+                    'tradetype': ['SELL'],
+                    'price': [price],
+                    'stopprice': [stop_price],
+                    'usd': [usd],
+                    'sats': [sats],
+                    'MA12': [MA1],
+                    'MA20': [MA2],
+                    'cur_cash': [round(usd + (sats*price), 2)],
+                    'streak': [streak] 
+                }
+        trade_log(trade)
+        
+    ###############
+    # BUY signal
+    ###############
 
-        continue
+    # Check if the MA1 is higher than the MA2
+    if MA1 > MA2:
+        
+        if usd > 5:
+            
+            logging.info(f"BUY signal triggered at ${price}")
+            
+            # Update position
+            trader.BUY(symbol=symbol, qty=usd)
+        
+            # Position management
+            orig_stop_price = round((1-MAEVE['stoploss']) * price, 2)
+            stop_price = round((1-MAEVE['stoploss']) * price, 2)
+            stopped = 0
 
-    break
-    
+            # Log trade
+            # datetime, trigger, tradetype, price, usd, sats, MA12, MA20, cur_cash, streak
+            trade = {
+                        'datetime': [str(datetime.now())],
+                        'trigger': ['BUY'],
+                        'tradetype': ['BUY'],
+                        'price': [price],
+                        'stopprice': [stop_price],
+                        'usd': [usd],
+                        'sats': [sats],
+                        'MA12': [MA1],
+                        'MA20': [MA2],
+                        'cur_cash': [round(usd + (sats*price), 2)],
+                        'streak': [streak]
+                    }
+            trade_log(trade)
 
-# hist_df = trader.HIST_PRICE(symbol, hours=30)
+    ###############
+    # SELL signal
+    ###############
 
-# print(hist_df.tail())
+    # Check if the MA1 is lower than the MA2
+    elif MA1 < MA2:
+        # If we're currently holding BTC, sell
+        if usd < 5:
+            
+            logging.info(f"SELL signal triggered at ${price}")
 
-# MA = trader.CALC_MA(hist_df, timeperiod=12)
-# MA = trader.CALC_MA(MA, timeperiod=24)
-# maxtime = MA['timestamp'].max()
+            # Update position
+            trader.SELL(symbol=symbol, qty=sats*0.9974)
+            
+            stopped = 0
+            
+            
+           # Log trade
+            # datetime, trigger, tradetype, price, usd, sats, MA12, MA20, cur_cash, streak
+            trade = {
+                        'datetime': [str(datetime.now())],
+                        'trigger': ['SELL'],
+                        'tradetype': ['SELL'],
+                        'price': [price],
+                        'stopprice': [stop_price],
+                        'usd': [usd],
+                        'sats': [sats],
+                        'MA12': [MA1],
+                        'MA20': [MA2],
+                        'cur_cash': [round(usd + (sats*price), 2)],
+                        'streak': [streak] 
+                    }
+            trade_log(trade)
 
-# MA12 = MA[MA['timestamp']==maxtime]['MA12'].values[0]
-# MA24 = MA[MA['timestamp']==maxtime]['MA24'].values[0]
-
-
-# print(MA12, MA24)
-
-# if MA12 > MA24: print("BUY")
-# else: print("SELL")
-
-# print(trader.CHK_BAL())
-
-# (MA1, MA2, stoploss, streaklim, cooldown)
-# combo = ('MA12', 'MA20', 0.01, 2, 48, True)
+    logging.info(f"Sleeping for {MAEVE['sleepMin']} min")
+    time.sleep(MAEVE['sleepMin']*60)
