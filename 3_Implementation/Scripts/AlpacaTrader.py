@@ -1,4 +1,5 @@
 import sys
+import requests
 
 sys.path.append("S://Docs//Personal//MAEVE//Data//Config//")
 from config import *
@@ -117,6 +118,10 @@ class AlpacaTrader:
         MA1 = self.CALC_MA(hist_df, timeperiod=MA)
         maxtime = MA1['timestamp'].max()        
         return MA1[MA1['timestamp']==maxtime][f'MA{MA}'].values[0]
+    
+    
+    def TG_ALERT(self, alert):
+        requests.get(tg_baseurl+f'{alert}')
 
         
 

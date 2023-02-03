@@ -55,6 +55,8 @@ logging.info(datetime.today())
 logging.info("MAEVE Starting")
 logging.info("############################")
 
+trader.TG_ALERT("MAEVE Starting")
+
 
 # Strategy parameters
 MAEVE = {
@@ -83,20 +85,23 @@ while True:
     logging.info("Strategy Run @" + str(datetime.now()))
     logging.info("#############################################")
     
+    trader.TG_ALERT("Strategy Run @" + str(datetime.now()))
+    
     
     ################
     # Market pulse
     ################
     
     logging.info("Market pulse")
+    trader.TG_ALERT("Market pulse")
     
     # Get current price
     price = trader.GET_PRICE()
     # Get current balances
     sats, usd = trader.CHK_BAL()
     
-    print(usd, sats)
-
+    trader.TG_ALERT(f"BTC price: {price}, USD: {usd}, BTC: {sats}")
+    
     # Get MAs
     MA1 = trader.GET_MA(MAEVE['MA1'])
     MA2 = trader.GET_MA(MAEVE['MA2'])
@@ -125,6 +130,7 @@ while True:
     if streak >= MAEVE['streaklim']:
         
         logging.info(f"Cooldown: {idle}")
+        trader.TG_ALERT(f"Cooldown: {idle}")
         
         idle += 1
         if idle >= MAEVE['cooldown']:
@@ -143,16 +149,20 @@ while True:
         if stop_price == orig_stop_price:
             if new_stop > (stop_price * (1+MAEVE['stoploss'])): 
                 logging.info(f"Trailing Stop price -> break even")
+                trader.TG_ALERT(f"Trailing Stop price -> break even")
                 stop_price = new_stop
         else:
             if new_stop > (stop_price * (1+0.01)): 
                 logging.info(f"Trailing Stop price +0.01")
+                trader.TG_ALERT(f"Trailing Stop price +0.01")
                 stop_price = new_stop
     
     # Check stop loss trigger
     if price < stop_price and usd < 5:
         
         logging.info(f"Stop loss triggered at ${stop_price}")
+        trader.TG_ALERT(f"Stop loss triggered at ${stop_price}")
+        
         
         # Update position
         trader.SELL(symbol=symbol, qty=sats)
@@ -161,6 +171,7 @@ while True:
         streak += 1
         stopped = 1
         
+        logging.info("Trade log")
         # Log trade
         # datetime, trigger, tradetype, price, usd, sats, MA12, MA20, cur_cash, streak
         trade = {
@@ -188,6 +199,7 @@ while True:
         if usd > 5:
             
             logging.info(f"BUY signal triggered at ${price}")
+            trader.TG_ALERT(f"BUY signal triggered at ${price}")
             
             # Update position
             trader.BUY(symbol=symbol, qty=usd)
@@ -197,6 +209,7 @@ while True:
             stop_price = round((1-MAEVE['stoploss']) * price, 2)
             stopped = 0
 
+            logging.info("Trade log")
             # Log trade
             # datetime, trigger, tradetype, price, usd, sats, MA12, MA20, cur_cash, streak
             trade = {
@@ -224,14 +237,15 @@ while True:
         if usd < 5:
             
             logging.info(f"SELL signal triggered at ${price}")
+            trader.TG_ALERT(f"SELL signal triggered at ${price}")
 
             # Update position
             trader.SELL(symbol=symbol, qty=sats*0.9974)
             
             stopped = 0
             
-            
-           # Log trade
+            logging.info("Trade log")
+            # Log trade
             # datetime, trigger, tradetype, price, usd, sats, MA12, MA20, cur_cash, streak
             trade = {
                         'datetime': [str(datetime.now())],
@@ -249,4 +263,6 @@ while True:
             trade_log(trade)
 
     logging.info(f"Sleeping for {MAEVE['sleepMin']} min")
+    trader.TG_ALERT(f"Sleeping for {MAEVE['sleepMin']} min")
+    
     time.sleep(MAEVE['sleepMin']*60)
