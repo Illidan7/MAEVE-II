@@ -1,5 +1,12 @@
-import sys
+import time
+import os
 import requests
+
+import urllib.parse
+import hashlib
+import hmac
+import base64
+import sys
 
 sys.path.append("S://Docs//Personal//MAEVE//Data//Config//")
 from config import *
@@ -11,94 +18,90 @@ from dateutil.relativedelta import relativedelta
 
 class KrakenTrader:
     
-    def __init__(self, live=False):
-        if live: self.trading_client = TradingClient(API_KEY, SECRET_KEY, paper=not live)
-        else: self.trading_client = TradingClient(PAPER_API_KEY, PAPER_SECRET_KEY, paper=not live)
-        
-        self.alp_factor = 1 - FEES
-        
-        
-    def BUY(self, symbol, qty):
-        # preparing orders
-        market_order_data = MarketOrderRequest(
-            symbol=symbol,
-            qty=qty,
-            side=OrderSide.BUY,
-            time_in_force=TimeInForce.GTC
-        )
+    def __init__(self):
+        self.api_url = "https://api.kraken.com"
+        self.kraken_fee_factor = 1 - FEES
+    
+    
+    def get_kraken_signature(self, urlpath, data, secret):
 
-        # Market order
-        market_order = self.trading_client.submit_order(
-            order_data=market_order_data
-        )
-        
-        return
-    
-    
-    def SELL(self, symbol, qty):
-        # preparing orders
-        market_order_data = MarketOrderRequest(
-            symbol=symbol,
-            qty=qty,
-            side=OrderSide.SELL,
-            time_in_force=TimeInForce.GTC
-        )
+        postdata = urllib.parse.urlencode(data)
+        encoded = (str(data['nonce']) + postdata).encode()
+        message = urlpath.encode() + hashlib.sha256(encoded).digest()
 
-        # Market order
-        market_order = self.trading_client.submit_order(
-            order_data=market_order_data
-        )
-        
-        return
+        mac = hmac.new(base64.b64decode(secret), message, hashlib.sha512)
+        sigdigest = base64.b64encode(mac.digest())
+        return sigdigest.decode()
     
     
-    def GET_PRICE(self, symbol="BTC/USD"):
-        # no keys required
-        client = CryptoHistoricalDataClient()
+    def kraken_request(self, uri_path, data):
+        headers = {}
+        headers['API-Key'] = API_KEY
+        # get_kraken_signature()
+        headers['API-Sign'] = get_kraken_signature(uri_path, data, SECRET_KEY)
+        req = requests.post((self.api_url + uri_path), headers=headers, data=data)
+        return req
 
-        # single symbol request
-        request_params = CryptoLatestQuoteRequest(symbol_or_symbols=symbol)
-        latest_quote = client.get_crypto_latest_quote(request_params)
 
-        return latest_quote[symbol].ask_price
+    def BUY(self, qty, price, symbol="XBTUSD"):
+        
+        resp = kraken_request('/0/private/AddOrder', {
+                                                        "nonce": str(int(1000*time.time())),
+                                                        "ordertype": "limit",
+                                                        "type": "buy",
+                                                        "volume": qty,
+                                                        "pair": symbol,
+                                                        "price": price
+                                                    }, API_KEY, SECRET_KEY)
+        
+        return resp.json()['result']['ordernum']
     
     
-    def CHK_BTC(self, symbol="BTC/USD"):
-        symbol = symbol.replace('/','')
-        portfolio = self.trading_client.get_all_positions()
+    def SELL(self, qty, price, symbol="XBTUSD"):
         
-        for position in portfolio:           
-            if dict(position)['symbol'] == symbol:    
-                return float(dict(position)['qty'])
+        resp = kraken_request('/0/private/AddOrder', {
+                                                        "nonce": str(int(1000*time.time())),
+                                                        "ordertype": "limit",
+                                                        "type": "sell",
+                                                        "volume": qty,
+                                                        "pair": symbol,
+                                                        "price": price
+                                                    }, API_KEY, SECRET_KEY)
         
-        return 0.0
+        return resp.json()['result']['ordernum']
+    
+    
+    def GET_PRICE(self, symbol="XXBTZUSD"):
+
+        url = "https://api.kraken.com/0/public/Ticker?pair=XBTUSD"
+        response = requests.get(url)
+        data = response.json()
+        price = data['result'][symbol]['c'][0]
+        
+        return price
+    
+    
+    def CHK_BTC(self):
+        resp = kraken_request('/0/private/Balance', {"nonce": str(int(1000*time.time()))})
+        return resp.json()['result']['XXBT']
     
     
     def CHK_CASH(self):
-        return float(self.trading_client.get_account().non_marginable_buying_power)
+        resp = kraken_request('/0/private/Balance', {"nonce": str(int(1000*time.time()))})
+        return resp.json()['result']['ZUSD']
     
     
     def CHK_BAL(self):
         return self.CHK_BTC(), self.CHK_CASH()
     
     
-    def HIST_PRICE(self, symbol, hours):
+    def HIST_PRICE(self, symbol='XBTUSD', timeframe=60):
         
-        time_diff = datetime.now() - relativedelta(hours=hours)
-        # no keys required for crypto data
-        client = CryptoHistoricalDataClient()
+        resp = requests.get(f'https://api.kraken.com/0/public/OHLC?pair={symbol}&interval={timeframe}')
 
-        request_params = CryptoBarsRequest(
-            symbol_or_symbols=[symbol],
-            timeframe=TimeFrame.Hour,
-            start=time_diff
-        )
+        df = pd.DataFrame(resp.json()['result']['XXBTZUSD'], columns=['time', 'open', 'high', 'low', 'close', 'vwap', 'volume', 'count'])
+        df['time'] = pd.to_datetime(df['time'], unit='s')
 
-        bars = client.get_crypto_bars(request_params)
-        # convert to dataframe
-        df = bars.df.reset_index()
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        
         return df
     
     
@@ -107,8 +110,8 @@ class KrakenTrader:
         return df
     
     
-    def GET_MA(self, MA, symbol="BTC/USD", hours=30):
-        hist_df = self.HIST_PRICE(symbol=symbol, hours=hours)
+    def GET_MA(self, MA, symbol="XBTUSD", timeframe=60):
+        hist_df = self.HIST_PRICE(symbol=symbol, timeframe=timeframe)
         MA1 = self.CALC_MA(hist_df, timeperiod=MA)
         maxtime = MA1['timestamp'].max()        
         return MA1[MA1['timestamp']==maxtime][f'MA{MA}'].values[0]
