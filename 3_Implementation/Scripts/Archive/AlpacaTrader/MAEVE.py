@@ -1,4 +1,4 @@
-import KrakenTrader as krkn
+import AlpacaTrader as alp
 
 import pandas as pd
 
@@ -7,7 +7,7 @@ import time
 import logging
 from datetime import datetime
 
-trader = krkn.KrakenTrader()
+trader = alp.AlpacaTrader(live=False)
 
 save_loc = "S://Docs//Personal//MAEVE//MAEVE-II//3_Implementation//Scripts//logs//"
 
@@ -112,8 +112,8 @@ while True:
     # Get current balances
     sats, usd = trader.CHK_BAL()
     # Buy side
-    qty_buy = round((usd/(price+trader.offset)) * trader.fee_factor, 8)
-    qty_sell = round(sats * trader.fee_factor, 8)
+    qty_buy = round((usd/price) * trader.alp_factor, 8)
+    qty_sell = round(sats * trader.alp_factor, 8)
     
     text = f"BTC price: {price}, USD: {usd}, BTC: {sats}, Total (USD): {round(usd + (sats*price), 2)}"
     text_log(text=text, tg=True, padding=False)
@@ -184,7 +184,7 @@ while True:
         text_log(text=text, tg=True, padding=True)
         
         # Update position
-        trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
+        trader.SELL(symbol=MAEVE['symbol'], qty=qty_sell)
         
         # Update streak
         streak += 1
@@ -221,7 +221,7 @@ while True:
             text_log(text=text, tg=True, padding=True)
             
             # Update position
-            trader.BUY(qty=qty_buy, price=price+100, symbol="XBTUSD")
+            trader.BUY(symbol=MAEVE['symbol'], qty=qty_buy)
         
             # Position management
             orig_stop_price = round((1-MAEVE['stoploss']) * price, 2)
@@ -259,7 +259,7 @@ while True:
             text_log(text=text, tg=True, padding=True)
             
             # Update position
-            trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
+            trader.SELL(symbol=MAEVE['symbol'], qty=qty_sell)
             
             stopped = 0
             

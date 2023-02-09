@@ -20,7 +20,8 @@ class KrakenTrader:
     
     def __init__(self):
         self.api_url = "https://api.kraken.com"
-        self.kraken_fee_factor = 1 - FEES
+        self.fee_factor = 1 - FEES
+        self.offset = 100
     
     
     def get_kraken_signature(self, urlpath, data, secret):
@@ -38,37 +39,43 @@ class KrakenTrader:
         headers = {}
         headers['API-Key'] = API_KEY
         # get_kraken_signature()
-        headers['API-Sign'] = get_kraken_signature(uri_path, data, SECRET_KEY)
+        headers['API-Sign'] = self.get_kraken_signature(uri_path, data, SECRET_KEY)
         req = requests.post((self.api_url + uri_path), headers=headers, data=data)
         return req
 
 
     def BUY(self, qty, price, symbol="XBTUSD"):
         
-        resp = kraken_request('/0/private/AddOrder', {
+        resp = self.kraken_request('/0/private/AddOrder', {
                                                         "nonce": str(int(1000*time.time())),
                                                         "ordertype": "limit",
                                                         "type": "buy",
                                                         "volume": qty,
                                                         "pair": symbol,
                                                         "price": price
-                                                    }, API_KEY, SECRET_KEY)
+                                                    })
         
-        return resp.json()['result']['ordernum']
+        # return resp.json()['result']['ordernum']
+        return
     
     
     def SELL(self, qty, price, symbol="XBTUSD"):
         
-        resp = kraken_request('/0/private/AddOrder', {
+        resp = self.kraken_request('/0/private/AddOrder', {
                                                         "nonce": str(int(1000*time.time())),
                                                         "ordertype": "limit",
                                                         "type": "sell",
                                                         "volume": qty,
                                                         "pair": symbol,
                                                         "price": price
-                                                    }, API_KEY, SECRET_KEY)
+                                                    })
         
-        return resp.json()['result']['ordernum']
+        # return resp.json()['result']['ordernum']
+        return
+    
+    
+    def CHK_ORDER(self, ordernum):
+        pass
     
     
     def GET_PRICE(self, symbol="XXBTZUSD"):
@@ -78,17 +85,17 @@ class KrakenTrader:
         data = response.json()
         price = data['result'][symbol]['c'][0]
         
-        return price
+        return round(float(price),2)
     
     
     def CHK_BTC(self):
-        resp = kraken_request('/0/private/Balance', {"nonce": str(int(1000*time.time()))})
-        return resp.json()['result']['XXBT']
+        resp = self.kraken_request('/0/private/Balance', {"nonce": str(int(1000*time.time()))})
+        return round(float(resp.json()['result']['XXBT']),8)
     
     
     def CHK_CASH(self):
-        resp = kraken_request('/0/private/Balance', {"nonce": str(int(1000*time.time()))})
-        return resp.json()['result']['ZUSD']
+        resp = self.kraken_request('/0/private/Balance', {"nonce": str(int(1000*time.time()))})
+        return round(float(resp.json()['result']['ZUSD']),2)
     
     
     def CHK_BAL(self):

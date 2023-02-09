@@ -1,6 +1,6 @@
-import AlpacaTrader as alp
+import KrakenTrader as krkn
 
-trader = alp.AlpacaTrader(live=False)
+trader = krkn.KrakenTrader()
 
 symbol = "BTC/USD"
 
@@ -9,9 +9,10 @@ price = trader.GET_PRICE()
 # Get current balances
 sats, usd = trader.CHK_BAL()
 
+
 # Buy side
-qty_buy = round(round(usd/price, 8) * trader.alp_factor, 8)
-qty_sell = round(sats * trader.alp_factor, 8)
+qty_buy = round(round(usd/(price+100), 8) * trader.fee_factor, 8)
+qty_sell = round(sats * trader.fee_factor, 8)
 
 print(f"BTC price: {price}")
 print(f"BTC balance: {sats}")
@@ -21,12 +22,12 @@ print(f"QTY sell: {qty_sell}")
 
 
 
-if qty_buy > 0.01:
+if qty_buy > 0.0001:
     print("Executing Market order: BUY")
-    trader.BUY(symbol=symbol, qty=qty_buy)
+    trader.BUY(qty=qty_buy, price=price+100, symbol="XBTUSD")
 else:
     print("Executing Market order: SELL")
-    trader.SELL(symbol=symbol, qty=qty_sell)
+    trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
 
 
 # Get current balances
