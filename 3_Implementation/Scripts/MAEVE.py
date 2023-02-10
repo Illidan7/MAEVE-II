@@ -9,7 +9,7 @@ from datetime import datetime
 
 trader = krkn.KrakenTrader()
 
-save_loc = "S://Docs//Personal//MAEVE//MAEVE-II//3_Implementation//Scripts//logs//"
+save_loc = "S://Docs//Personal//MAEVE//Data//logs//"
 
 
 ##################
@@ -17,7 +17,7 @@ save_loc = "S://Docs//Personal//MAEVE//MAEVE-II//3_Implementation//Scripts//logs
 ##################
 
 # Process logging
-log_loc = "S://Docs//Personal//MAEVE//MAEVE-II//3_Implementation//Scripts//logs//MAEVE.log"
+log_loc = "S://Docs//Personal//MAEVE//Data//logs//MAEVE.log"
 logging.basicConfig(filename=log_loc, level=logging.INFO)
 
 
@@ -112,7 +112,7 @@ while True:
     # Get current balances
     sats, usd = trader.CHK_BAL()
     # Buy side
-    qty_buy = round((usd/(price+trader.offset)) * trader.fee_factor, 8)
+    qty_buy = round(round(usd/(price+100), 8) * trader.fee_factor, 8)
     qty_sell = round(sats * trader.fee_factor, 8)
     
     text = f"BTC price: {price}, USD: {usd}, BTC: {sats}, Total (USD): {round(usd + (sats*price), 2)}"
