@@ -1,12 +1,7 @@
 numpy
 pandas
 scikit-learn
-matplotlib
-seaborn
-plotly
 datetime
 fsspec
-jupyter
-jupyter_contrib_nbextensions
 scipy
 krakenex
