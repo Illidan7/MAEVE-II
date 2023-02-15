@@ -7,6 +7,7 @@ sudo apt install python3 git
 sudo apt install python3-pip
 sudo apt install screen
 
+
 ##################
 # Git commands
 ##################
@@ -19,3 +20,10 @@ git config --global credential.helper store
 
 # Gets rid of git pull warning
 git config --global pull.rebase false
+
+
+##################
+# Python packages
+##################
+
+pip install -r requirements.txt

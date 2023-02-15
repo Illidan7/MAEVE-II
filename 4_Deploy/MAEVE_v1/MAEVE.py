@@ -152,6 +152,9 @@ while True:
         if idle >= MAEVE['cooldown']:
             streak = 0
             idle = 0
+        
+        continue
+        
     
     
     #######################
