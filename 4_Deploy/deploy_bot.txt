@@ -1,0 +1,60 @@
+##################
+# Server setup
+##################
+
+sudo apt update
+sudo apt install python3 git
+sudo apt install python3-pip
+sudo apt install screen
+
+
+##################
+# Git commands
+##################
+
+git config --global user.email "xxx@xxx.xxx"
+git config --global user.name "xxxx"
+
+# This will store your credentials after you have authenticated the first time 
+git config --global credential.helper store
+
+# Gets rid of git pull warning
+git config --global pull.rebase false
+
+
+#####################
+# Setup directories
+#####################
+
+# Set up directory structure
+cd ~
+mkdir data git MAEVE-II
+cd data
+mkdir Config logs
+
+# Pull down git repo
+cd ~
+cd git
+git clone https://github.com/Illidan7/MAEVE-II.git
+
+# After entering credentials on config file
+cp *.py /root/MAEVE-II/
+mv /root/MAEVE-II/config.py /root/data/Config/
+
+
+##################
+# Python packages
+##################
+
+pip install -r /root/git/MAEVE-II/4_Deploy/MAEVE_v1/requirements.txt
+
+
+############
+# Run bot 
+############
+
+screen -S MAEVE
+cd /root/MAEVE-II/
+python3 MAEVE.py
+
+Ctrl+A then D, to detach screen
