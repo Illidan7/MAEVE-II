@@ -119,8 +119,15 @@ while True:
     MA1 = trader.GET_MA(MAEVE['MA1'])
     MA2 = trader.GET_MA(MAEVE['MA2'])
     
-    text = f'''BTC price: {price}, USD: {usd}, BTC: {sats}, Total (USD): {round(usd + (sats*price), 2)}
-                MA12:{MA1}, MA20: {MA2}, bullish: {MA1>MA2}'''
+    text = f'''
+    BTC price: {price}
+    USD: {usd}
+    BTC: {sats}
+    Total (USD): {round(usd + (sats*price), 2)}
+    MA12: {MA1} 
+    MA20: {MA2}
+    bullish: {MA1>MA2}
+    '''
     text_log(text=text, tg=True, padding=False)
     
     logging.info("Event Log")
