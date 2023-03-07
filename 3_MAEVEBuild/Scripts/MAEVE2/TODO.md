@@ -1,0 +1,10 @@
+- ~~Change FEES for KrakenTrader~~
+- ~~Build strategy out on MAEVE2.py~~
+- ~~Test out marketOrders.py~~
+- Build in limit order
+- Check till limit order executed
+- Build in Stop loss order
+- Build in STOP functionality to Telegram
+- ~~Set up Deployment code~~
+- ~~Test Deployment locally~~
+- Deploy on Linode

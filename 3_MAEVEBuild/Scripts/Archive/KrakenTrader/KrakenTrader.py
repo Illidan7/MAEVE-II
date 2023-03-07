@@ -74,21 +74,6 @@ class KrakenTrader:
         return
     
     
-    def STOPLOSS(self, qty, price, symbol="XBTUSD"):
-        resp = self.kraken_request('/0/private/AddOrder', {
-                                                        "nonce": str(int(1000*time.time())),
-                                                        "ordertype": "stop-loss-limit",
-                                                        "type": "sell",
-                                                        "volume": qty,
-                                                        "pair": symbol,
-                                                        "price": price,
-                                                        "price2": price+2000
-                                                    })
-        
-        # return resp.json()['result']['ordernum']
-        return
-    
-    
     def CHK_ORDER(self, ordernum):
         pass
     
@@ -132,29 +117,11 @@ class KrakenTrader:
         return df
     
     
-    def CALC_ATR(self, df, n):
-        tr = pd.DataFrame()
-        tr['h-l'] = df['high'].astype(float) - df['low'].astype(float)
-        tr['h-pc'] = abs(df['high'].astype(float) - df['close'].astype(float).shift(1))
-        tr['l-pc'] = abs(df['low'].astype(float) - df['close'].astype(float).shift(1))
-        tr['true_range'] = tr[['h-l', 'h-pc', 'l-pc']].max(axis=1)
-        atr = tr['true_range'].rolling(n).mean()
-        df[f'ATR{n}'] = atr
-        return df
-    
-    
     def GET_MA(self, MA, symbol="XBTUSD", timeframe=60):
         hist_df = self.HIST_PRICE(symbol=symbol, timeframe=timeframe)
         MA1 = self.CALC_MA(hist_df, timeperiod=MA)
         maxtime = MA1['time'].max()        
         return MA1[MA1['time']==maxtime][f'MA{MA}'].values[0]
-    
-    
-    def GET_ATR(self, ATR, symbol="XBTUSD", timeframe=60):
-        hist_df = self.HIST_PRICE(symbol=symbol, timeframe=timeframe)
-        ATR1 = self.CALC_ATR(hist_df, n=ATR)
-        maxtime = ATR1['time'].max()        
-        return ATR1[ATR1['time']==maxtime][f'ATR{ATR}'].values[0]
     
     
     def TG_ALERT(self, alert):

@@ -8,7 +8,7 @@ import hmac
 import base64
 import sys
 
-sys.path.append("S://Docs//Personal//MAEVE//Data//Config//")
+sys.path.append("/root/data/Config/")
 from config import *
 
 import pandas as pd
