@@ -108,8 +108,7 @@ tgind = False
 
 while True:
     
-    if tgcounter % 60 == 0:
-        tgind = True
+    tgind = True if tgcounter % 60 == 0 else False
     
     text = "Strategy Run @" + str(datetime.now())
     text_log(text=text, tg=tgind, padding=True)
