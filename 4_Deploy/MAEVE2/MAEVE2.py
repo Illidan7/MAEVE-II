@@ -91,7 +91,7 @@ MAEVE = {
             'streaklim': 0,
             'trailing': True,
             # Deployment
-            'sleepMin': 30,
+            'sleepMin': 5,
             'symbol': "BTC/USD"
         }
 
@@ -102,17 +102,23 @@ orig_stop_price = 0
 streak = 0
 stopped = 0
 
+# Telegram update management
+tgcounter = 0
+tgind = False
 
 while True:
     
+    if tgcounter % 60 == 0:
+        tgind = True
+    
     text = "Strategy Run @" + str(datetime.now())
-    text_log(text=text, tg=True, padding=True)
+    text_log(text=text, tg=tgind, padding=True)
     
     ################
     # Market pulse
     ################
      
-    text_log("Market pulse", tg=True, padding=False)
+    text_log("Market pulse", tg=tgind, padding=False)
     
     # Get current price
     price = trader.GET_PRICE()
@@ -160,7 +166,7 @@ ATR35: {ATR2},
 BUY_trigger: {BUY_trigger},
 SELL_trigger: {SELL_trigger}
     '''
-    text_log(text=text, tg=True, padding=False)
+    text_log(text=text, tg=tgind, padding=False)
     
     
     logging.info("Event Log")
@@ -203,21 +209,21 @@ SELL_trigger: {SELL_trigger}
                 
                 stop_price = new_stop
                 text = f"Trailing Stop price -> break even -> {stop_price}"
-                text_log(text=text, tg=True, padding=True)
+                text_log(text=text, tg=tgind, padding=True)
                 
         else:
             if new_stop > (stop_price * (1+0.01)):
                 
                 stop_price = new_stop
                 text = f"Trailing Stop price -> +0.01 -> {stop_price}"
-                text_log(text=text, tg=True, padding=True)
+                text_log(text=text, tg=tgind, padding=True)
                 
     
     # Check stop loss trigger
     if price < stop_price and usd < 5:
         
         text = f"Stop loss triggered at ${stop_price}"
-        text_log(text=text, tg=True, padding=True)
+        text_log(text=text, tg=tgind, padding=True)
         
         # Update position
         trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
@@ -262,7 +268,7 @@ SELL_trigger: {SELL_trigger}
         if usd > 5:
             
             text = f"BUY signal triggered at ${price}"
-            text_log(text=text, tg=True, padding=True)
+            text_log(text=text, tg=tgind, padding=True)
             
             # Update position
             trader.BUY(qty=qty_buy, price=price+100, symbol="XBTUSD")
@@ -308,7 +314,7 @@ SELL_trigger: {SELL_trigger}
         if usd < 5:
             
             text = f"SELL signal triggered at ${price}"
-            text_log(text=text, tg=True, padding=True)
+            text_log(text=text, tg=tgind, padding=True)
             
             # Update position
             trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
@@ -342,6 +348,8 @@ SELL_trigger: {SELL_trigger}
             trade_log(trade)
 
     text = f"Sleeping for {MAEVE['sleepMin']} min"
-    text_log(text=text, tg=True, padding=False)
+    text_log(text=text, tg=tgind, padding=False)
+    
+    tgcounter += MAEVE['sleepMin']
     
     time.sleep(MAEVE['sleepMin']*60)
