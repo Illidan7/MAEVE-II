@@ -124,7 +124,7 @@ while True:
     # Get current balances
     sats, usd = trader.CHK_BAL()
     # Buy side
-    qty_buy = round(round(usd/(price+100), 8) * trader.fee_factor, 8)
+    qty_buy = round(round(usd/(price), 8) * trader.fee_factor, 8)
     qty_sell = round(sats * trader.fee_factor, 8)
     
     
@@ -225,7 +225,7 @@ SELL_trigger: {SELL_trigger}
         text_log(text=text, tg=tgind, padding=True)
         
         # Update position
-        trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
+        trader.SELL(qty=qty_sell, price=price, symbol="XBTUSD")
         
         # Update streak
         streak += 1
@@ -270,7 +270,7 @@ SELL_trigger: {SELL_trigger}
             text_log(text=text, tg=tgind, padding=True)
             
             # Update position
-            trader.BUY(qty=qty_buy, price=price+100, symbol="XBTUSD")
+            trader.BUY(qty=qty_buy, price=price, symbol="XBTUSD")
         
             # Position management
             orig_stop_price = round((1-MAEVE['stoploss']) * price, 2)
@@ -316,7 +316,7 @@ SELL_trigger: {SELL_trigger}
             text_log(text=text, tg=tgind, padding=True)
             
             # Update position
-            trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
+            trader.SELL(qty=qty_sell, price=price, symbol="XBTUSD")
             
             stopped = 0
             

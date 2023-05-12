@@ -48,7 +48,7 @@ class KrakenTrader:
         
         resp = self.kraken_request('/0/private/AddOrder', {
                                                         "nonce": str(int(1000*time.time())),
-                                                        "ordertype": "limit",
+                                                        "ordertype": "market",
                                                         "type": "buy",
                                                         "volume": qty,
                                                         "pair": symbol,
@@ -63,7 +63,7 @@ class KrakenTrader:
         
         resp = self.kraken_request('/0/private/AddOrder', {
                                                         "nonce": str(int(1000*time.time())),
-                                                        "ordertype": "limit",
+                                                        "ordertype": "market",
                                                         "type": "sell",
                                                         "volume": qty,
                                                         "pair": symbol,

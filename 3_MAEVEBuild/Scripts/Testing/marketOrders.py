@@ -13,7 +13,7 @@ def position_status():
     sats, usd = trader.CHK_BAL()
 
     # Order amounts
-    qty_buy = round(round(usd/(price+100), 8) * trader.fee_factor, 8)
+    qty_buy = round(round(usd/(price), 8) * trader.fee_factor, 8)
     qty_sell = round(sats * trader.fee_factor, 8)
 
     return price, sats, usd, qty_buy, qty_sell
@@ -35,11 +35,11 @@ print(f"QTY sell: {qty_sell}")
 
 if qty_buy > 0.0001:
     print("Executing Market order: BUY")
-    trader.BUY(qty=qty_buy, price=price+100, symbol="XBTUSD")
+    trader.BUY(qty=qty_buy, price=price, symbol="XBTUSD")
     
 else:
     print("Executing Market order: SELL")
-    trader.SELL(qty=qty_sell, price=price-100, symbol="XBTUSD")
+    trader.SELL(qty=qty_sell, price=price, symbol="XBTUSD")
 
 
 # Get current balances
